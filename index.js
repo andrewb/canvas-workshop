@@ -31,6 +31,9 @@ export default function (canvas, canvasWidth, canvasHeight) {
     height: 40
   };
 
+  const sprite = new Image();
+  sprite.src = 'player.png';
+
   // Collision detection
   // Checks if rect1 and rect2 intersect, i.e. collide
   // Returns `true` if there is an intersection, otherwise `false`
@@ -55,15 +58,18 @@ export default function (canvas, canvasWidth, canvasHeight) {
   }
 
   function drawPlayer() {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-    // TODO #9 - render a better player
+    // DONE #9 - render a better player
+    ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
   }
 
   function drawPickup(pickup) {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(pickup.x, pickup.y, pickup.width, pickup.height);
-    // TODO #8 - render pickups as circles
+    ctx.fillStyle = '#ffcc00';
+    // DONE #8 - render pickups as circles
+    const radius = pickup.width / 2;
+    ctx.beginPath();
+    ctx.arc(pickup.x + radius, pickup.y + radius, radius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
   }
 
   function loop(timestamp) {
@@ -85,9 +91,20 @@ export default function (canvas, canvasWidth, canvasHeight) {
       player.y = player.y + PLAYER_SPEED_PX * delta;
     }
 
-    // TODO #1 - keep player in bounds
+    // DONE #1 - keep player in bounds
 
-    // TODO #3 - move pickups across screen
+    if (player.y < 0) {
+      player.y = 0;
+    }
+
+    if (player.y > canvasHeight - player.height) {
+      player.y = canvasHeight - player.height;
+    }
+
+    // DONE #3 - move pickups across screen
+    for (const pickup of state.pickups) {
+      pickup.x = pickup.x - SCROLL_SPEED_PX * delta;
+    }
 
     // Spawn pickups
     if (timestamp - state.lastSpawnTime > SPAWN_INTERVAL_MS) {
@@ -97,16 +114,32 @@ export default function (canvas, canvasWidth, canvasHeight) {
 
     /*** Collision detection ***/
 
-    // TODO #4 - increment score if player collides with pickup
-    // TODO #5 - remove pickup on collision
-    // TODO #7 - remove pickups when they move off screen
+    // DONE #4 - increment score if player collides with pickup
+    // DONE #5 - remove pickup on collision
+    // DONE #7 - remove pickups when they move off screen
+
+    state.pickups = state.pickups.reduce((acc, pickup) => {
+      if (isColliding(player, pickup)) {
+        state.score = state.score + 1;
+        // Remove pickup
+        return acc;
+      }
+      if (pickup.x + pickup.width < 0) {
+        // Pickup is off-screen
+        return acc;
+      }
+      // Keep pickup
+      return acc.concat(pickup);
+    }, []);
 
     /*** Render ***/
 
     // Clear canvas
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    // TODO #2 - change bg color
+    // DONE #2 - change bg color
+    ctx.fillStyle = '#5cc3e5';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Render player
     drawPlayer();
@@ -115,7 +148,10 @@ export default function (canvas, canvasWidth, canvasHeight) {
       drawPickup(pickup);
     }
 
-    // TODO #6 - render player's score
+    // DONE #6 - render player's score
+    ctx.fillStyle = '#000';
+    ctx.font = '16px sans-serif';
+    ctx.fillText(state.score, 10, 20);
 
     // Next tick
     window.requestAnimationFrame(loop);
